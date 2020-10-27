@@ -1,0 +1,11 @@
+﻿using System.Threading.Tasks;
+using Swisschain.Sirius.Api.ApiContract.Account;
+
+namespace Core.Blockchain
+{
+    public interface ISiriusWalletsService
+    {
+        Task CreateWalletsAsync(string clientId);
+        Task<AccountDetailsResponse> GetWalletAdderssAsync(string clientId, long assetId);
+    }
+}
