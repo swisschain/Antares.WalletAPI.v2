@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Common;
 using Common.Log;
 using Core.Blockchain;
-using Lykke.Common.Log;
 using Swisschain.Sirius.Api.ApiClient;
 using Swisschain.Sirius.Api.ApiContract.Account;
 using Swisschain.Sirius.Api.ApiContract.Common;
@@ -36,13 +35,13 @@ namespace LkeServices.Blockchain
 
             if (accountResponse.ResultCase == AccountSearchResponse.ResultOneofCase.Error)
             {
-                _log.Warning("Error getting wallets from sirius", context: $"Error: {accountResponse.Error.ToJson()}");
+                _log.WriteWarning(nameof(CreateWalletsAsync), info: "Error getting wallets from sirius", context: $"Error: {accountResponse.Error.ToJson()}");
             }
 
             if (accountResponse.ResultCase == AccountSearchResponse.ResultOneofCase.Body &&
                 accountResponse.Body.Items.Count == 0)
             {
-                _log.Info("Creating wallets in sirius", context: clientId);
+                _log.WriteInfo(nameof(CreateWalletsAsync), info: "Creating wallets in sirius", context: clientId);
 
                 var createResponse = await _siriusApiClient.Accounts.CreateAsync(new AccountCreateRequest
                 {
@@ -51,11 +50,11 @@ namespace LkeServices.Blockchain
 
                 if (createResponse.ResultCase == AccountCreateResponse.ResultOneofCase.Error)
                 {
-                    _log.Warning("Error creating wallets in sirius", context: $"Error: {createResponse.Error.ToJson()}");
+                    _log.WriteWarning(nameof(CreateWalletsAsync), info: "Error creating wallets in sirius", context: $"Error: {createResponse.Error.ToJson()}");
                 }
                 else
                 {
-                    _log.Info("Wallets created in siruis", context: $"Result: {createResponse.Body.Account.ToJson()}");
+                    _log.WriteInfo(nameof(CreateWalletsAsync), info: "Wallets created in siruis", context: $"Result: {createResponse.Body.Account.ToJson()}");
                 }
             }
         }
@@ -71,7 +70,7 @@ namespace LkeServices.Blockchain
 
             if (searchResponse.ResultCase == AccountDetailsSearchResponse.ResultOneofCase.Error)
             {
-                _log.Warning("Error getting wallet from sirius", context: $"Error: {searchResponse.Error.ToJson()}, clientId: {clientId}, assetId: {assetId}");
+                _log.WriteWarning(nameof(GetWalletAdderssAsync), info: "Error getting wallet from sirius", context: $"Error: {searchResponse.Error.ToJson()}, clientId: {clientId}, assetId: {assetId}");
             }
 
             return searchResponse.ResultCase == AccountDetailsSearchResponse.ResultOneofCase.Body
