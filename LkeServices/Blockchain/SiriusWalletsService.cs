@@ -45,7 +45,9 @@ namespace LkeServices.Blockchain
 
                 var createResponse = await _siriusApiClient.Accounts.CreateAsync(new AccountCreateRequest
                 {
-                    BrokerAccountId = _brokerAccountId, ReferenceId = clientId
+                    RequestId = $"{_brokerAccountId}{clientId}",
+                    BrokerAccountId = _brokerAccountId,
+                    ReferenceId = clientId
                 });
 
                 if (createResponse.ResultCase == AccountCreateResponse.ResultOneofCase.Error)
