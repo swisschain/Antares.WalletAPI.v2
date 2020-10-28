@@ -69,6 +69,11 @@ namespace LkeServices.Blockchain
                 AssetId = assetId
             });
 
+            if (searchResponse.ResultCase == AccountDetailsSearchResponse.ResultOneofCase.Error)
+            {
+                _log.Warning("Error getting wallet from sirius", context: $"Error: {searchResponse.Error.ToJson()}, clientId: {clientId}, assetId: {assetId}");
+            }
+
             return searchResponse.ResultCase == AccountDetailsSearchResponse.ResultOneofCase.Body
                 ? searchResponse.Body.Items.FirstOrDefault()
                 : null;
