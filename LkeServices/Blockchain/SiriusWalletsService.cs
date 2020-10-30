@@ -15,26 +15,34 @@ namespace LkeServices.Blockchain
     public class SiriusWalletsService : ISiriusWalletsService
     {
         private readonly long _brokerAccountId;
+        private readonly int _retryCount;
+        private readonly TimeSpan _retryTimeout;
         private readonly IApiClient _siriusApiClient;
         private readonly ILog _log;
 
-        private readonly RetryPolicy<AccountDetailsSearchResponse> _waitAccountCreationPolicy = Policy
-            .HandleResult<AccountDetailsSearchResponse>(res =>
-            {
-                var hasWallets = res != null && res.Body.Items.Count > 0;
-                Console.WriteLine(!hasWallets ? "No response yet..." : "Got wallets response!");
-                return !hasWallets;
-            })
-            .WaitAndRetryAsync(10, retryAttempt => TimeSpan.FromSeconds(1));
+        private readonly RetryPolicy<AccountSearchResponse> _waitAccountCreationPolicy;
 
         public SiriusWalletsService(
             long brokerAccountId,
+            int retryCount,
+            TimeSpan retryTimeout,
             IApiClient siriusApiClient,
             ILog log)
         {
             _brokerAccountId = brokerAccountId;
+            _retryCount = retryCount;
+            _retryTimeout = retryTimeout;
             _siriusApiClient = siriusApiClient;
             _log = log;
+
+            _waitAccountCreationPolicy = Policy
+                .HandleResult<AccountSearchResponse>(res =>
+                {
+                    var hasAllActiveWallets = res != null && res.Body.Items.Count > 0 && res.Body.Items.All(x => x.State == AccountStateModel.Active);
+                    _log.WriteInfo(nameof(CreateWalletsAsync), info: !hasAllActiveWallets ? "Wallets not ready yet..." : "All wallets are active!", context: null);
+                    return !hasAllActiveWallets;
+                })
+                .WaitAndRetryAsync(_retryCount, retryAttempt => _retryTimeout);
         }
 
         public async Task CreateWalletsAsync(string clientId, bool waitForCreation)
@@ -65,21 +73,24 @@ namespace LkeServices.Blockchain
                 if (createResponse.ResultCase == AccountCreateResponse.ResultOneofCase.Error)
                 {
                     _log.WriteWarning(nameof(CreateWalletsAsync), info: "Error creating wallets in sirius", context: $"Error: {createResponse.Error.ToJson()}");
+                    return;
                 }
-                else
-                {
-                    _log.WriteInfo(nameof(CreateWalletsAsync), info: "Wallets created in siruis", context: $"Result: {createResponse.Body.Account.ToJson()}");
-                }
+
+                _log.WriteInfo(nameof(CreateWalletsAsync), info: "Wallets created in siruis", context: $"Result: {createResponse.Body.Account.ToJson()}");
+
                 if (waitForCreation)
                 {
-                    var result = await _waitAccountCreationPolicy.ExecuteAsync(async () =>
-                        await _siriusApiClient.Accounts.SearchDetailsAsync(new AccountDetailsSearchRequest
+                    _log.WriteInfo(nameof(CreateWalletsAsync), info: $"Waiting for all wallets to be active ({_retryCount} retries with {_retryTimeout.TotalSeconds} sec. delay)", context: $"clientId: {clientId}");
+
+                    await _waitAccountCreationPolicy.ExecuteAsync(async () =>
+                        await _siriusApiClient.Accounts.SearchAsync(new AccountSearchRequest
                         {
                             BrokerAccountId = _brokerAccountId,
+                            Id = createResponse.Body.Account.Id,
                             ReferenceId = clientId
                         }));
 
-                    _log.WriteInfo(nameof(CreateWalletsAsync), info: result == null ? "No wallets result" : "Wait for wallets finished! Got result", context: $"clientId: {clientId}");
+                    _log.WriteInfo(nameof(CreateWalletsAsync), info: "All wallets are active!", context: $"clientId: {clientId}");
                 }
             }
         }
