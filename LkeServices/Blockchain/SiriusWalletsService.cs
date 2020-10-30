@@ -1,8 +1,12 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
 using Core.Blockchain;
+using Lykke.Common.Log;
+using Polly;
+using Polly.Retry;
 using Swisschain.Sirius.Api.ApiClient;
 using Swisschain.Sirius.Api.ApiContract.Account;
 using Swisschain.Sirius.Api.ApiContract.Common;
@@ -15,6 +19,10 @@ namespace LkeServices.Blockchain
         private readonly IApiClient _siriusApiClient;
         private readonly ILog _log;
 
+        private readonly RetryPolicy<AccountDetailsSearchResponse> _waitAccountCreationPolicy = Policy
+            .HandleResult<AccountDetailsSearchResponse>(res => res == null)
+            .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(3));
+
         public SiriusWalletsService(
             long brokerAccountId,
             IApiClient siriusApiClient,
@@ -25,7 +33,7 @@ namespace LkeServices.Blockchain
             _log = log;
         }
 
-        public async Task CreateWalletsAsync(string clientId)
+        public async Task CreateWalletsAsync(string clientId, bool waitForCreation)
         {
             var accountResponse = await _siriusApiClient.Accounts.SearchAsync(new AccountSearchRequest
             {
@@ -57,6 +65,17 @@ namespace LkeServices.Blockchain
                 else
                 {
                     _log.WriteInfo(nameof(CreateWalletsAsync), info: "Wallets created in siruis", context: $"Result: {createResponse.Body.Account.ToJson()}");
+                }
+                if (waitForCreation)
+                {
+                    var result = await _waitAccountCreationPolicy.ExecuteAsync(async () =>
+                        await _siriusApiClient.Accounts.SearchDetailsAsync(new AccountDetailsSearchRequest
+                        {
+                            BrokerAccountId = _brokerAccountId,
+                            ReferenceId = clientId
+                        }));
+
+                    _log.WriteInfo(nameof(CreateWalletsAsync), info: "Wallets created!", context: $"clientId: {clientId}");
                 }
             }
         }
