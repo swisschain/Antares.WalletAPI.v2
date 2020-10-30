@@ -39,7 +39,7 @@ namespace LkeServices.Blockchain
                 .HandleResult<AccountSearchResponse>(res =>
                 {
                     var hasAllActiveWallets = res != null && res.Body.Items.Count > 0 && res.Body.Items.All(x => x.State == AccountStateModel.Active);
-                    _log.WriteInfo(nameof(CreateWalletsAsync), info: !hasAllActiveWallets ? "Wallets not ready yet..." : "All wallets are active!", context: null);
+                    Console.WriteLine(!hasAllActiveWallets ? "Wallets not ready yet..." : "All wallets are active!");
                     return !hasAllActiveWallets;
                 })
                 .WaitAndRetryAsync(_retryCount, retryAttempt => _retryTimeout);
