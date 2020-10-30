@@ -360,7 +360,7 @@ namespace LykkeApi2.Controllers
 
             if (asset.BlockchainIntegrationType == BlockchainIntegrationType.Sirius)
             {
-                await _siriusWalletsService.CreateWalletsAsync(_requestContext.ClientId);
+                await _siriusWalletsService.CreateWalletsAsync(_requestContext.ClientId, true);
                 return Ok();
             }
 
