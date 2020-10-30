@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Common;
 using Common.Log;
 using Core.Blockchain;
-using Lykke.Common.Log;
 using Polly;
 using Polly.Retry;
 using Swisschain.Sirius.Api.ApiClient;
@@ -20,7 +19,12 @@ namespace LkeServices.Blockchain
         private readonly ILog _log;
 
         private readonly RetryPolicy<AccountDetailsSearchResponse> _waitAccountCreationPolicy = Policy
-            .HandleResult<AccountDetailsSearchResponse>(res => res == null)
+            .HandleResult<AccountDetailsSearchResponse>(res =>
+            {
+                var hasWallets = res != null && res.Body.Items.Count > 0;
+                Console.WriteLine(!hasWallets ? "No response yet..." : "Wallets created!");
+                return !hasWallets;
+            })
             .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(3));
 
         public SiriusWalletsService(
