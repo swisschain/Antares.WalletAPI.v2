@@ -38,6 +38,12 @@ namespace LkeServices.Blockchain
             _waitAccountCreationPolicy = Policy
                 .HandleResult<AccountSearchResponse>(res =>
                 {
+                    if (res != null && res.ResultCase == AccountSearchResponse.ResultOneofCase.Error)
+                    {
+                        Console.WriteLine($"Error getting account: {res.Error.ToJson()}");
+                        return true;
+                    }
+
                     var hasAllActiveWallets = res != null && res.Body.Items.Count > 0 && res.Body.Items.All(x => x.State == AccountStateModel.Active);
                     Console.WriteLine(!hasAllActiveWallets ? "Wallets not ready yet..." : "All wallets are active!");
                     return !hasAllActiveWallets;
@@ -87,7 +93,8 @@ namespace LkeServices.Blockchain
                         {
                             BrokerAccountId = _brokerAccountId,
                             Id = createResponse.Body.Account.Id,
-                            ReferenceId = clientId
+                            ReferenceId = clientId,
+                            Pagination = new PaginationInt64{Limit = 100}
                         }));
 
                     _log.WriteInfo(nameof(CreateWalletsAsync), info: "All wallets are active!", context: $"clientId: {clientId}");
