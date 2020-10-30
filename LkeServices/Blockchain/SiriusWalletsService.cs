@@ -25,7 +25,7 @@ namespace LkeServices.Blockchain
                 Console.WriteLine(!hasWallets ? "No response yet..." : "Wallets created!");
                 return !hasWallets;
             })
-            .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(3));
+            .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(1));
 
         public SiriusWalletsService(
             long brokerAccountId,
