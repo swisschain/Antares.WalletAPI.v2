@@ -22,10 +22,10 @@ namespace LkeServices.Blockchain
             .HandleResult<AccountDetailsSearchResponse>(res =>
             {
                 var hasWallets = res != null && res.Body.Items.Count > 0;
-                Console.WriteLine(!hasWallets ? "No response yet..." : "Wallets created!");
+                Console.WriteLine(!hasWallets ? "No response yet..." : "Got wallets response!");
                 return !hasWallets;
             })
-            .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(1));
+            .WaitAndRetryAsync(10, retryAttempt => TimeSpan.FromSeconds(1));
 
         public SiriusWalletsService(
             long brokerAccountId,
@@ -79,7 +79,7 @@ namespace LkeServices.Blockchain
                             ReferenceId = clientId
                         }));
 
-                    _log.WriteInfo(nameof(CreateWalletsAsync), info: "Wallets created!", context: $"clientId: {clientId}");
+                    _log.WriteInfo(nameof(CreateWalletsAsync), info: result == null ? "No wallets result" : "Wait for wallets finished! Got result", context: $"clientId: {clientId}");
                 }
             }
         }
