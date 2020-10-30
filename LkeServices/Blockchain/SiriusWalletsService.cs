@@ -40,12 +40,12 @@ namespace LkeServices.Blockchain
                 {
                     if (res != null && res.ResultCase == AccountSearchResponse.ResultOneofCase.Error)
                     {
-                        Console.WriteLine($"Error getting account: {res.Error.ToJson()}");
+                        _log.WriteInfo(nameof(CreateWalletsAsync), info: "Error getting account", context: $"error: {res.Error.ToJson()}");
                         return true;
                     }
 
                     var hasAllActiveWallets = res != null && res.Body.Items.Count > 0 && res.Body.Items.All(x => x.State == AccountStateModel.Active);
-                    Console.WriteLine(!hasAllActiveWallets ? "Wallets not ready yet..." : "All wallets are active!");
+                    _log.WriteInfo(nameof(CreateWalletsAsync),info: !hasAllActiveWallets ? "Wallets not ready yet..." : "All wallets are active!", context: null);
                     return !hasAllActiveWallets;
                 })
                 .WaitAndRetryAsync(_retryCount, retryAttempt => _retryTimeout);
